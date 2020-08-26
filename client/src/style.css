@@ -73,6 +73,11 @@ select {
     0 100px 80px rgba(0, 0, 0, 0.07);
 }
 
+.start.card {
+  text-align: center;
+}
+
+.start.card,
 .local-preview.card {
   width: 340px;
   margin-left: auto;
@@ -102,10 +107,22 @@ select {
   margin-top: 0.5em;
   width: 100%;
 }
-.local-preview .media-select:last-child {
-  margin-bottom: 0;
+.local-preview .controls + form {
+  margin-top: 1em;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
-
+.local-preview .form-input {
+  margin-bottom: 1em;
+}
+.local-preview .form-input input {
+  display: block;
+  width: 100%;
+  font-size: inherit;
+  padding: 0.5em;
+  margin-top: 0.5em;
+  border-radius: 6px;
+  border-width: 1px;
+}
 /* grid layout */
 
 .video-chat {

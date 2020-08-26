@@ -1,15 +1,12 @@
 import Video from "twilio-video";
-import { showElements, hideElements } from "./utils";
 
 export class VideoChat extends EventTarget {
-  constructor(token, roomName, localTracks, allowedReactions) {
+  constructor(token, roomName, localTracks) {
     super();
     this.videoTrack = localTracks.videoTrack;
     this.audioTrack = localTracks.audioTrack;
     this.dataTrack = localTracks.dataTrack;
-    this.reactions = allowedReactions;
     this.container = document.getElementById("participants");
-    this.screenDiv = document.getElementById("activity");
     this.chatDiv = document.getElementById("video-chat");
     this.dominantSpeaker = null;
     this.participantItems = new Map();
@@ -27,13 +24,6 @@ export class VideoChat extends EventTarget {
     );
     this.tidyUp = this.tidyUp.bind(this);
     this.init(token, roomName);
-  }
-
-  whiteboardStarted(whiteboard) {
-    this.whiteboard = whiteboard;
-  }
-  whiteboardStopped() {
-    this.whiteboard = null;
   }
 
   async init(token, roomName) {
@@ -109,15 +99,7 @@ export class VideoChat extends EventTarget {
       const muteBtn = item.querySelector(".actions button");
       if (track.kind === "video") {
         const videoElement = track.attach();
-        if (track.name === "user-screen") {
-          this.chatDiv.classList.add("screen-share");
-          this.screenDiv.appendChild(videoElement);
-          showElements(this.screenDiv);
-          const screenShareEvent = new Event("screen-share-started");
-          this.dispatchEvent(screenShareEvent);
-        } else {
-          wrapper.appendChild(videoElement);
-        }
+        wrapper.appendChild(videoElement);
       } else if (track.kind === "audio") {
         const audioElement = track.attach();
         wrapper.appendChild(audioElement);
@@ -142,46 +124,16 @@ export class VideoChat extends EventTarget {
           info.appendChild(mutedHTML);
         });
       } else if (track.kind === "data") {
-        if (participant !== this.room.localParticipant) {
-          const mute = item.querySelector(".actions button");
-          mute.addEventListener("click", () => {
-            const action = mute.innerText.toLowerCase();
-            if (["mute", "unmute"].includes(action)) {
-              const message = JSON.stringify({
-                action,
-                participantSid: participant.sid,
-              });
-              this.dataTrack.send(message);
-            }
-          });
-          if (this.whiteboard) {
-            const message = JSON.stringify({
-              action: "whiteboard",
-              event: "started",
-              existingLines: this.whiteboard.lines,
-            });
-            this.dataTrack.send(message);
-          }
-        }
-        const reactionDiv = document.createElement("div");
-        reactionDiv.classList.add("reaction");
-        wrapper.appendChild(reactionDiv);
         track.on("message", this.messageReceived(participant));
       }
     };
   }
 
-  trackUnsubcribed(participant) {
+  trackUnsubcribed() {
     return (track) => {
       if (track.kind !== "data") {
         const mediaElements = track.detach();
         mediaElements.forEach((mediaElement) => mediaElement.remove());
-        if (track.name === "user-screen") {
-          hideElements(this.screenDiv);
-          this.chatDiv.classList.remove("screen-share");
-          const screenShareEvent = new Event("screen-share-stopped");
-          this.dispatchEvent(screenShareEvent);
-        }
       }
     };
   }
@@ -229,76 +181,7 @@ export class VideoChat extends EventTarget {
   }
 
   messageReceived(participant) {
-    const participantItem = this.participantItems.get(participant.sid);
-    const reactionDiv = participantItem.querySelector(".reaction");
-    let reactionCount = 0;
-    let timeout;
-    return (message) => {
-      const data = JSON.parse(message);
-      if (
-        data.action === "reaction" &&
-        this.reactions.includes(data.reaction)
-      ) {
-        const reaction = data.reaction;
-        if (timeout) {
-          clearTimeout(timeout);
-        }
-        if (reactionDiv.innerText === reaction) {
-          if (reactionCount < 5) {
-            reactionDiv.classList.remove(`size-${reactionCount}`);
-            reactionCount += 1;
-            reactionDiv.classList.add(`size-${reactionCount}`);
-          }
-        } else {
-          reactionDiv.innerText = reaction;
-          reactionDiv.classList.remove(`size-${reactionCount}`);
-          reactionCount = 1;
-          reactionDiv.classList.add(`size-${reactionCount}`);
-        }
-        timeout = setTimeout(() => {
-          reactionDiv.innerText = "";
-          reactionDiv.classList.remove(`size-${reactionCount}`);
-          reactionCount = 0;
-        }, 5000);
-      } else if (
-        data.action === "mute" &&
-        this.room.localParticipant.sid === data.participantSid &&
-        this.audioTrack.isEnabled
-      ) {
-        this.audioTrack.disable();
-      } else if (
-        data.action === "unmute" &&
-        this.room.localParticipant.sid === data.participantSid &&
-        !this.audioTrack.isEnabled
-      ) {
-        this.audioTrack.enable();
-      } else if (data.action === "whiteboard") {
-        if (data.event === "started") {
-          const whiteboardStartedEvent = new CustomEvent("whiteboard-started", {
-            detail: data.existingLines,
-          });
-          this.dispatchEvent(whiteboardStartedEvent);
-        } else if (data.event === "stopped") {
-          const whiteboardStoppedEvent = new Event("whiteboard-stopped");
-          this.dispatchEvent(whiteboardStoppedEvent);
-        } else {
-          const whiteboardDrawEvent = new CustomEvent("whiteboard-draw", {
-            detail: data.event,
-          });
-          this.dispatchEvent(whiteboardDrawEvent);
-        }
-      }
-    };
-  }
-
-  startScreenShare(track) {
-    this.room.localParticipant.publishTrack(track);
-  }
-
-  stopScreenShare(track) {
-    if (this.room) {
-      this.room.localParticipant.unpublishTrack(track);
-    }
+    return (message) => {};
   }
 
   roomDisconnected(room, error) {
