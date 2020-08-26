@@ -161,6 +161,18 @@ select {
   width: 100%;
   max-height: calc(100vh - 15rem);
 }
+.screen-share #activity {
+  position: relative;
+  width: 100%;
+  max-height: calc(100vh - 18rem);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.screen-share #activity video {
+  max-height: inherit;
+  max-width: 100%;
+}
 .participants .actions {
   position: absolute;
   bottom: 8px;

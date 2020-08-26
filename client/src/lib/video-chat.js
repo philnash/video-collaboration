@@ -15,7 +15,7 @@ export class VideoChat extends EventTarget {
     this.trackPublished = this.trackPublished.bind(this);
     this.trackUnpublished = this.trackUnpublished.bind(this);
     this.trackSubscribed = this.trackSubscribed.bind(this);
-    this.trackUnsubcribed = this.trackUnsubcribed.bind(this);
+    this.trackUnsubscribed = this.trackUnsubscribed.bind(this);
     this.messageReceived = this.messageReceived.bind(this);
     this.roomDisconnected = this.roomDisconnected.bind(this);
     this.dominantSpeakerChanged = this.dominantSpeakerChanged.bind(this);
@@ -75,7 +75,7 @@ export class VideoChat extends EventTarget {
         this.trackSubscribed(participant)(trackPub.track);
       }
       trackPub.on("subscribed", this.trackSubscribed(participant));
-      trackPub.on("unsubscribed", this.trackUnsubcribed(participant));
+      trackPub.on("unsubscribed", this.trackUnsubscribed(participant));
     };
   }
 
@@ -129,7 +129,7 @@ export class VideoChat extends EventTarget {
     };
   }
 
-  trackUnsubcribed() {
+  trackUnsubscribed() {
     return (track) => {
       if (track.kind !== "data") {
         const mediaElements = track.detach();
@@ -140,7 +140,7 @@ export class VideoChat extends EventTarget {
 
   trackUnpublished(trackPub) {
     if (trackPub.track) {
-      this.trackUnscribed(trackPub.track);
+      this.trackUnsubscribed()(trackPub.track);
     }
   }
 
