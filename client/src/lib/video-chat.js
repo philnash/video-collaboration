@@ -96,7 +96,6 @@ export class VideoChat extends EventTarget {
       const item = this.participantItems.get(participant.sid);
       const wrapper = item.querySelector(".video-wrapper");
       const info = item.querySelector(".info");
-      const muteBtn = item.querySelector(".actions button");
       if (track.kind === "video") {
         const videoElement = track.attach();
         wrapper.appendChild(videoElement);
@@ -106,21 +105,12 @@ export class VideoChat extends EventTarget {
         const mutedHTML = document.createElement("p");
         mutedHTML.appendChild(document.createTextNode("🔇"));
         if (!track.isEnabled) {
-          if (muteBtn) {
-            muteBtn.innerText = "Unmute";
-          }
           info.appendChild(mutedHTML);
         }
         track.on("enabled", () => {
-          if (muteBtn) {
-            muteBtn.innerText = "Mute";
-          }
           mutedHTML.remove();
         });
         track.on("disabled", () => {
-          if (muteBtn) {
-            muteBtn.innerText = "Unmute";
-          }
           info.appendChild(mutedHTML);
         });
       } else if (track.kind === "data") {
@@ -156,9 +146,6 @@ export class VideoChat extends EventTarget {
     if (participant !== this.room.localParticipant) {
       const actions = document.createElement("div");
       actions.classList.add("actions");
-      const mute = document.createElement("button");
-      mute.appendChild(document.createTextNode("mute"));
-      actions.appendChild(mute);
       wrapper.appendChild(actions);
       const name = document.createElement("p");
       name.classList.add("name");

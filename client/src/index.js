@@ -19,7 +19,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const previewBtn = document.getElementById("media-preview");
   const startDiv = document.querySelector(".start");
   const videoChatDiv = document.getElementById("video-chat");
-  const activityDiv = document.getElementById("activity");
   const joinForm = document.getElementById("join-room");
   const disconnectBtn = document.getElementById("disconnect");
   const screenShareBtn = document.getElementById("screen-share");
