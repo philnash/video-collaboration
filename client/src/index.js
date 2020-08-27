@@ -2,8 +2,9 @@ import { createLocalTracks } from "twilio-video";
 import { VideoChat } from "./lib/video-chat";
 import { hideElements, showElements } from "./lib/utils";
 import LocalPreview from "./lib/localPreview";
+import { ScreenSharer } from "./lib/screen-sharer";
 
-let videoTrack, audioTrack, localPreview, videoChat;
+let videoTrack, audioTrack, localPreview, videoChat, screenSharer;
 
 const setupTrackListeners = (track, button, enableLabel, disableLabel) => {
   button.innerText = track.isEnabled ? disableLabel : enableLabel;
@@ -21,7 +22,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const videoChatDiv = document.getElementById("video-chat");
   const joinForm = document.getElementById("join-room");
   const disconnectBtn = document.getElementById("disconnect");
-  const screenShareBtn = document.getElementById("screen-share");
+  const screenShareBtn = document.getElementById("share-screen");
   const muteBtn = document.getElementById("mute-self");
   const disableVideoBtn = document.getElementById("disable-video");
 
@@ -92,12 +93,18 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     showElements(videoChatDiv);
     localPreview.hide();
+    screenSharer = new ScreenSharer(screenShareBtn, videoChat);
+    videoChat.addEventListener("screen-share-started", () => {
+      screenSharer.disable();
+    });
+    videoChat.addEventListener("screen-share-stopped", screenSharer.enable);
   });
 
   disconnectBtn.addEventListener("click", () => {
     if (!videoChat) {
       return;
     }
+    screenSharer = screenSharer.destroy();
     videoChat.disconnect();
     hideElements(videoChatDiv);
     localPreview.show();

@@ -1,4 +1,5 @@
 import Video from "twilio-video";
+import { showElements, hideElements } from "./utils";
 
 export class VideoChat extends EventTarget {
   constructor(token, roomName, localTracks) {
@@ -7,6 +8,7 @@ export class VideoChat extends EventTarget {
     this.audioTrack = localTracks.audioTrack;
     this.container = document.getElementById("participants");
     this.chatDiv = document.getElementById("video-chat");
+    this.activityDiv = document.getElementById("activity");
     this.dominantSpeaker = null;
     this.participantItems = new Map();
     this.participantConnected = this.participantConnected.bind(this);
@@ -77,7 +79,16 @@ export class VideoChat extends EventTarget {
       const info = item.querySelector(".info");
       if (track.kind === "video") {
         const videoElement = track.attach();
-        wrapper.appendChild(videoElement);
+        if (track.name === "user-screen") {
+          this.chatDiv.classList.add("screen-share");
+          this.activityDiv.appendChild(videoElement);
+          showElements(this.activityDiv);
+          if (participant !== this.room.localParticipant) {
+            this.dispatchEvent(new Event("screen-share-started"));
+          }
+        } else {
+          wrapper.appendChild(videoElement);
+        }
       } else if (track.kind === "audio") {
         const audioElement = track.attach();
         wrapper.appendChild(audioElement);
@@ -96,11 +107,18 @@ export class VideoChat extends EventTarget {
     };
   }
 
-  trackUnsubscribed() {
+  trackUnsubscribed(participant) {
     return (track) => {
       if (track.kind !== "data") {
         const mediaElements = track.detach();
         mediaElements.forEach((mediaElement) => mediaElement.remove());
+      }
+      if (track.name === "user-screen") {
+        hideElements(this.activityDiv);
+        this.chatDiv.classList.remove("screen-share");
+        if (participant !== this.room.localParticipant) {
+          this.dispatchEvent(new Event("screen-share-stopped"));
+        }
       }
     };
   }
@@ -191,5 +209,15 @@ export class VideoChat extends EventTarget {
     }
     this.container.style.setProperty("--grid-rows", rows);
     this.container.style.setProperty("--grid-columns", cols);
+  }
+
+  startScreenShare(screenTrack) {
+    this.room.localParticipant.publishTrack(screenTrack);
+  }
+
+  stopScreenShare(screenTrack) {
+    this.room.localParticipant.unpublishTrack(screenTrack);
+    this.chatDiv.classList.remove("screen-share");
+    hideElements(this.activityDiv);
   }
 }
