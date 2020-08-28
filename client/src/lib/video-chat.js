@@ -5,7 +5,6 @@ export class VideoChat extends EventTarget {
     super();
     this.videoTrack = localTracks.videoTrack;
     this.audioTrack = localTracks.audioTrack;
-    this.dataTrack = localTracks.dataTrack;
     this.container = document.getElementById("participants");
     this.chatDiv = document.getElementById("video-chat");
     this.dominantSpeaker = null;
@@ -16,12 +15,8 @@ export class VideoChat extends EventTarget {
     this.trackUnpublished = this.trackUnpublished.bind(this);
     this.trackSubscribed = this.trackSubscribed.bind(this);
     this.trackUnsubscribed = this.trackUnsubscribed.bind(this);
-    this.messageReceived = this.messageReceived.bind(this);
     this.roomDisconnected = this.roomDisconnected.bind(this);
     this.dominantSpeakerChanged = this.dominantSpeakerChanged.bind(this);
-    this.localParticipantTrackPublished = this.localParticipantTrackPublished.bind(
-      this
-    );
     this.tidyUp = this.tidyUp.bind(this);
     this.init(token, roomName);
   }
@@ -30,7 +25,7 @@ export class VideoChat extends EventTarget {
     try {
       this.room = await Video.connect(token, {
         name: roomName,
-        tracks: [this.videoTrack, this.audioTrack, this.dataTrack],
+        tracks: [this.videoTrack, this.audioTrack],
         dominantSpeaker: true,
       });
       this.participantConnected(this.room.localParticipant);
@@ -39,10 +34,6 @@ export class VideoChat extends EventTarget {
       this.room.participants.forEach(this.participantConnected);
       this.room.on("disconnected", this.roomDisconnected);
       this.room.on("dominantSpeakerChanged", this.dominantSpeakerChanged);
-      this.room.localParticipant.on(
-        "trackPublished",
-        this.localParticipantTrackPublished
-      );
       window.addEventListener("beforeunload", this.tidyUp);
       window.addEventListener("pagehide", this.tidyUp);
     } catch (error) {
@@ -79,18 +70,6 @@ export class VideoChat extends EventTarget {
     };
   }
 
-  localParticipantTrackPublished(track) {
-    if (track.kind === "data") {
-      const dataTrackPublishedEvent = new CustomEvent("data-track-published", {
-        detail: {
-          track,
-          participant: this.room.localParticipant,
-        },
-      });
-      this.dispatchEvent(dataTrackPublishedEvent);
-    }
-  }
-
   trackSubscribed(participant) {
     return (track) => {
       const item = this.participantItems.get(participant.sid);
@@ -113,8 +92,6 @@ export class VideoChat extends EventTarget {
         track.on("disabled", () => {
           info.appendChild(mutedHTML);
         });
-      } else if (track.kind === "data") {
-        track.on("message", this.messageReceived(participant));
       }
     };
   }
@@ -165,10 +142,6 @@ export class VideoChat extends EventTarget {
     item.remove();
     this.participantItems.delete(participant.sid);
     this.setRowsAndColumns(this.room);
-  }
-
-  messageReceived(participant) {
-    return (message) => {};
   }
 
   roomDisconnected(room, error) {
