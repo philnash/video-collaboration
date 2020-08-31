@@ -1,10 +1,17 @@
 import Video from "twilio-video";
+import { allowedReactions } from "./reactions";
 
 export class VideoChat extends EventTarget {
   constructor(token, roomName, localTracks) {
     super();
     this.videoTrack = localTracks.videoTrack;
     this.audioTrack = localTracks.audioTrack;
+    this.dataTrack = localTracks.dataTrack;
+    this.dataTrackReady = {};
+    this.dataTrackReady.promise = new Promise((resolve, reject) => {
+      this.dataTrackReady.resolve = resolve;
+      this.dataTrackReady.reject = reject;
+    });
     this.container = document.getElementById("participants");
     this.chatDiv = document.getElementById("video-chat");
     this.dominantSpeaker = null;
@@ -17,6 +24,13 @@ export class VideoChat extends EventTarget {
     this.trackUnsubscribed = this.trackUnsubscribed.bind(this);
     this.roomDisconnected = this.roomDisconnected.bind(this);
     this.dominantSpeakerChanged = this.dominantSpeakerChanged.bind(this);
+    this.localParticipantTrackPublished = this.localParticipantTrackPublished.bind(
+      this
+    );
+    this.localParticipantTrackPublicationFailed = this.localParticipantTrackPublicationFailed.bind(
+      this
+    );
+    this.messageReceived = this.messageReceived.bind(this);
     this.tidyUp = this.tidyUp.bind(this);
     this.init(token, roomName);
   }
@@ -25,7 +39,7 @@ export class VideoChat extends EventTarget {
     try {
       this.room = await Video.connect(token, {
         name: roomName,
-        tracks: [this.videoTrack, this.audioTrack],
+        tracks: [this.videoTrack, this.audioTrack, this.dataTrack],
         dominantSpeaker: true,
       });
       this.participantConnected(this.room.localParticipant);
@@ -34,6 +48,15 @@ export class VideoChat extends EventTarget {
       this.room.participants.forEach(this.participantConnected);
       this.room.on("disconnected", this.roomDisconnected);
       this.room.on("dominantSpeakerChanged", this.dominantSpeakerChanged);
+      this.room.localParticipant.on(
+        "trackPublished",
+        this.localParticipantTrackPublished
+      );
+      this.room.localParticipant.on(
+        "trackPublicationFailed",
+        this.localParticipantTrackPublicationFailed
+      );
+      this.room.on("trackMessage", this.messageReceived);
       window.addEventListener("beforeunload", this.tidyUp);
       window.addEventListener("pagehide", this.tidyUp);
     } catch (error) {
@@ -119,6 +142,9 @@ export class VideoChat extends EventTarget {
     const info = document.createElement("div");
     info.classList.add("info");
     wrapper.appendChild(info);
+    const reaction = document.createElement("div");
+    reaction.classList.add("reaction");
+    wrapper.appendChild(reaction);
     participantItem.appendChild(wrapper);
     if (participant !== this.room.localParticipant) {
       const actions = document.createElement("div");
@@ -191,5 +217,49 @@ export class VideoChat extends EventTarget {
     }
     this.container.style.setProperty("--grid-rows", rows);
     this.container.style.setProperty("--grid-columns", cols);
+  }
+
+  localParticipantTrackPublished(trackPub) {
+    if (trackPub.track === this.dataTrack) {
+      this.dataTrackReady.resolve();
+    }
+  }
+  localParticipantTrackPublicationFailed(error, trackPub) {
+    if (trackPub.track === this.dataTrack) {
+      this.dataTrackReady.reject(error);
+    }
+  }
+
+  async sendMessage(message) {
+    await this.dataTrackReady.promise;
+    this.dataTrack.send(message);
+  }
+
+  messageReceived(data, track, participant) {
+    const message = JSON.parse(data);
+    if (message.action === "reaction") {
+      this.showReaction(message.reaction, participant);
+    }
+  }
+
+  showReaction(reaction, participant) {
+    if (!allowedReactions.includes(reaction)) {
+      return;
+    }
+    let participantItem;
+    if (participant) {
+      participantItem = this.participantItems.get(participant.sid);
+    } else {
+      participantItem = this.participantItems.get(
+        this.room.localParticipant.sid
+      );
+    }
+    const reactionDiv = participantItem.querySelector(".reaction");
+    reactionDiv.innerHTML = "";
+    reactionDiv.appendChild(document.createTextNode(reaction));
+    if (this.reactionTimeout) {
+      clearTimeout(this.reactionTimeout);
+    }
+    this.reactionTimeout = setTimeout(() => (reactionDiv.innerHTML = ""), 5000);
   }
 }

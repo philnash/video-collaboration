@@ -260,6 +260,7 @@ select {
   right: 8px;
   text-align: center;
   z-index: 10;
+  font-size: 4em;
 }
 
 .reaction.size-1 {

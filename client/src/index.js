@@ -1,9 +1,10 @@
-import { createLocalTracks } from "twilio-video";
+import { createLocalTracks, LocalDataTrack } from "twilio-video";
 import { VideoChat } from "./lib/video-chat";
 import { hideElements, showElements } from "./lib/utils";
 import LocalPreview from "./lib/localPreview";
+import { Reactions, allowedReactions } from "./lib/reactions";
 
-let videoTrack, audioTrack, localPreview, videoChat;
+let videoTrack, audioTrack, localPreview, videoChat, dataTrack, reactions;
 
 const setupTrackListeners = (track, button, enableLabel, disableLabel) => {
   button.innerText = track.isEnabled ? disableLabel : enableLabel;
@@ -24,6 +25,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const screenShareBtn = document.getElementById("screen-share");
   const muteBtn = document.getElementById("mute-self");
   const disableVideoBtn = document.getElementById("disable-video");
+  const liveControls = document.getElementById("live-controls");
 
   previewBtn.addEventListener("click", async () => {
     hideElements(startDiv);
@@ -41,6 +43,7 @@ window.addEventListener("DOMContentLoaded", () => {
       showElements(joinForm);
       videoTrack = tracks.find((track) => track.kind === "video");
       audioTrack = tracks.find((track) => track.kind === "audio");
+      dataTrack = new LocalDataTrack();
 
       setupTrackListeners(audioTrack, muteBtn, "Unmute", "Mute");
       setupTrackListeners(
@@ -86,12 +89,20 @@ window.addEventListener("DOMContentLoaded", () => {
     videoChat = new VideoChat(token, roomName, {
       videoTrack,
       audioTrack,
+      dataTrack,
     });
     if (!("getDisplayMedia" in navigator.mediaDevices)) {
       screenShareBtn.remove();
     }
     showElements(videoChatDiv);
     localPreview.hide();
+    reactions = new Reactions(liveControls);
+    reactions.addEventListener("reaction", (event) => {
+      videoChat.sendMessage(
+        JSON.stringify({ action: "reaction", reaction: event.detail })
+      );
+      videoChat.showReaction(event.detail);
+    });
   });
 
   disconnectBtn.addEventListener("click", () => {
@@ -99,6 +110,7 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
     videoChat.disconnect();
+    reactions = reactions.destroy();
     hideElements(videoChatDiv);
     localPreview.show();
     showElements(joinForm);
