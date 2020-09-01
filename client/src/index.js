@@ -2,9 +2,10 @@ import { createLocalTracks, LocalDataTrack } from "twilio-video";
 import { VideoChat } from "./lib/video-chat";
 import { hideElements, showElements } from "./lib/utils";
 import LocalPreview from "./lib/localPreview";
-import { Reactions, allowedReactions } from "./lib/reactions";
+import { Reactions } from "./lib/reactions";
+import { Chat } from "./lib/chat";
 
-let videoTrack, audioTrack, localPreview, videoChat, dataTrack, reactions;
+let videoTrack, audioTrack, localPreview, videoChat, dataTrack, reactions, chat;
 
 const setupTrackListeners = (track, button, enableLabel, disableLabel) => {
   button.innerText = track.isEnabled ? disableLabel : enableLabel;
@@ -26,6 +27,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const muteBtn = document.getElementById("mute-self");
   const disableVideoBtn = document.getElementById("disable-video");
   const liveControls = document.getElementById("live-controls");
+  const videoAndChat = document.getElementById("videos-and-chat");
+  const chatToggleBtn = document.getElementById("toggle-chat");
 
   previewBtn.addEventListener("click", async () => {
     hideElements(startDiv);
@@ -78,13 +81,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const inputs = joinForm.querySelectorAll("input");
     const data = {};
     inputs.forEach((input) => (data[input.getAttribute("name")] = input.value));
-    const { token, roomName } = await fetch(joinForm.getAttribute("action"), {
-      method: joinForm.getAttribute("method"),
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => res.json());
+    const { token, roomName, identity } = await fetch(
+      joinForm.getAttribute("action"),
+      {
+        method: joinForm.getAttribute("method"),
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    ).then((res) => res.json());
     hideElements(joinForm);
     videoChat = new VideoChat(token, roomName, {
       videoTrack,
@@ -103,6 +109,20 @@ window.addEventListener("DOMContentLoaded", () => {
       );
       videoChat.showReaction(event.detail);
     });
+    chat = new Chat(videoAndChat, chatToggleBtn, identity);
+    chat.addEventListener("chat-message", (event) => {
+      const message = event.detail;
+      message.action = "chat-message";
+      videoChat.sendMessage(JSON.stringify(message));
+    });
+    chat.addEventListener("chat-focused", unlistenForSpaceBar);
+    chat.addEventListener("chat-blurred", listenForSpaceBar);
+    videoChat.addEventListener("chat-message", (event) => {
+      chat.receiveMessage(event.detail);
+    });
+    chatToggleBtn.addEventListener("click", () => {
+      chat.toggle();
+    });
   });
 
   disconnectBtn.addEventListener("click", () => {
@@ -111,6 +131,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     videoChat.disconnect();
     reactions = reactions.destroy();
+    chat = chat.destroy();
     hideElements(videoChatDiv);
     localPreview.show();
     showElements(joinForm);
@@ -129,15 +150,23 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const listenForSpaceBar = () => {
+    document.addEventListener("keydown", unMuteOnSpaceBarDown);
+    document.addEventListener("keyup", muteOnSpaceBarUp);
+  };
+
+  const unlistenForSpaceBar = () => {
+    document.removeEventListener("keydown", unMuteOnSpaceBarDown);
+    document.removeEventListener("keyup", muteOnSpaceBarUp);
+  };
+
   muteBtn.addEventListener("click", () => {
     if (audioTrack.isEnabled) {
       audioTrack.disable();
-      document.addEventListener("keydown", unMuteOnSpaceBarDown);
-      document.addEventListener("keyup", muteOnSpaceBarUp);
+      listenForSpaceBar();
     } else {
       audioTrack.enable();
-      document.removeEventListener("keydown", unMuteOnSpaceBarDown);
-      document.removeEventListener("keyup", muteOnSpaceBarUp);
+      unlistenForSpaceBar();
     }
   });
 

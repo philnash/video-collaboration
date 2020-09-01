@@ -47,9 +47,24 @@ button {
   color: #fff;
   padding: 0.5em;
   border-radius: 6px;
+  position: relative;
 }
 button[disabled] {
   opacity: 0.5;
+}
+button span {
+  display: block;
+  position: absolute;
+  top: -0.75em;
+  right: -0.25em;
+  background-color: red;
+  color: #fff;
+  border-radius: 100%;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1.5em;
+  text-align: center;
+  z-index: 10;
 }
 
 select {
@@ -365,4 +380,51 @@ select {
   border-radius: 14px;
   top: 6px;
   left: 6px;
+}
+
+.main-area {
+  display: flex;
+}
+.main-area .participants {
+  flex-grow: 1;
+}
+.main-area .chat {
+  width: 25%;
+  max-width: 300px;
+  min-width: 200px;
+  max-height: calc(100vh - 14rem);
+  background: #060606;
+  display: flex;
+  flex-direction: column;
+  padding: 1em;
+}
+.main-area .chat[hidden] {
+  display: none;
+}
+.main-area .chat .messages {
+  list-style-type: none;
+  flex-grow: 1;
+  overflow-y: scroll;
+  color: #fff;
+  padding: 0;
+  margin: 0 0 1em;
+}
+.main-area .chat .messages .author {
+  font-weight: bold;
+  margin: 0 0 0.25em;
+}
+.main-area .chat .messages .body {
+  margin: 0 0 0.5em;
+}
+
+.main-area form label {
+  color: #fff;
+  display: block;
+  margin-bottom: 0.5em;
+}
+.main-area input,
+.main-area button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5em;
 }

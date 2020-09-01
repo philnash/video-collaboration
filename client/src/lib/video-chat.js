@@ -239,6 +239,8 @@ export class VideoChat extends EventTarget {
     const message = JSON.parse(data);
     if (message.action === "reaction") {
       this.showReaction(message.reaction, participant);
+    } else if (message.action === "chat-message") {
+      this.receiveChatMessage(message);
     }
   }
 
@@ -261,5 +263,12 @@ export class VideoChat extends EventTarget {
       clearTimeout(this.reactionTimeout);
     }
     this.reactionTimeout = setTimeout(() => (reactionDiv.innerHTML = ""), 5000);
+  }
+
+  receiveChatMessage(message) {
+    const messageEvent = new CustomEvent("chat-message", {
+      detail: message,
+    });
+    this.dispatchEvent(messageEvent);
   }
 }
