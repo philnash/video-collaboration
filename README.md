@@ -1,14 +1,14 @@
-# Phism
+# Video Collaboration
 
-A video collaboration app.
+A video app implementing a bunch of collaboration features
 
 ## Running the application
 
 Clone the application:
 
 ```bash
-git clone https://github.com/philnash/phism.git
-cd phism
+git clone https://github.com/philnash/video-collaboration.git
+cd video-collaboration
 ```
 
 Install the dependencies:
@@ -31,34 +31,16 @@ Run the dev server:
 npm start
 ```
 
-## Todo/ideas
+## Features
 
-- [x] Choose and switch camera and microphone
-- [x] Join a room
-- [x] Disconnect from room
-- [x] Screen sharing
-- [x] Emoji reactions 👎👍⏪⏩☕😂👏❤️⏰✋✅❌🤦
-- [x] Muting yourself and hiding video
-- [x] Dominant speaker detection
-- [x] Push to talk
-- [x] Mute other
-- [x] Whiteboard
-  - [x] Place whiteboard above action buttons
-  - [x] Colours for whiteboard
-  - [x] Disable share screen when whiteboard active
-  - [x] Disable whiteboard when share screen active
-  - [x] Brush options
-- [x] Name overlay on video
-- [ ] Reconnecting logic
-- [ ] Group selfie button (does canvas allow this?)
-- [ ] Code of conduct room joining barrier
-- [ ] Joinable links for rooms
-- [ ] Breakout rooms
-- [ ] Chat (Twilio Programmable Chat)
-- [ ] Live captions (Web Speech API)
-- [ ] Virtual background ([TensorFlow.js](https://blog.tensorflow.org/2019/11/updated-bodypix-2.html))
-
-https://hihayk.github.io/scale/#4/6/50/80/-51/60/20/14/663399/102/51/153/d-1
+* Multi party video chat
+* Enable/disable video
+* Mute/unmute microphone
+* Dominant speaker detection
+* Screen share
+* Emoji/non-verbal reactions
+* Basic text chat
+* Interactive whiteboard
 
 ## License
 
