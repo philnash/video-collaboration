@@ -15,6 +15,7 @@ export class VideoChat extends EventTarget {
     this.container = document.getElementById("participants");
     this.chatDiv = document.getElementById("video-chat");
     this.dominantSpeaker = null;
+    this.whiteboard = false;
     this.participantItems = new Map();
     this.participantConnected = this.participantConnected.bind(this);
     this.participantDisconnected = this.participantDisconnected.bind(this);
@@ -116,6 +117,15 @@ export class VideoChat extends EventTarget {
         track.on("disabled", () => {
           info.appendChild(mutedHTML);
         });
+      } else if (track.kind === "data") {
+        if (this.whiteboard) {
+          this.sendMessage(
+            JSON.stringify({
+              action: "whiteboard",
+              event: "started",
+            })
+          );
+        }
       }
     };
   }
@@ -184,6 +194,9 @@ export class VideoChat extends EventTarget {
 
   disconnect() {
     this.room.disconnect();
+    this.room = null;
+    window.removeEventListener("beforeunload", this.tidyUp);
+    window.removeEventListener("pagehide", this.tidyUp);
   }
 
   tidyUp(event) {
@@ -191,8 +204,7 @@ export class VideoChat extends EventTarget {
       return;
     }
     if (this.room) {
-      this.room.disconnect();
-      this.room = null;
+      this.disconnect();
     }
   }
 
@@ -242,6 +254,8 @@ export class VideoChat extends EventTarget {
       this.showReaction(message.reaction, participant);
     } else if (message.action === "chat-message") {
       this.receiveChatMessage(message);
+    } else if (message.action === "whiteboard") {
+      this.receiveWhiteboardMessage(message);
     }
   }
 
@@ -271,5 +285,22 @@ export class VideoChat extends EventTarget {
       detail: message,
     });
     this.dispatchEvent(messageEvent);
+  }
+
+  receiveWhiteboardMessage(message) {
+    if (message.event === "started") {
+      const whiteboardStartedEvent = new CustomEvent("whiteboard-started", {
+        detail: message.existingLines,
+      });
+      this.dispatchEvent(whiteboardStartedEvent);
+    } else if (message.event === "stopped") {
+      const whiteboardStoppedEvent = new Event("whiteboard-stopped");
+      this.dispatchEvent(whiteboardStoppedEvent);
+    } else {
+      const whiteboardDrawEvent = new CustomEvent("whiteboard-draw", {
+        detail: message.event,
+      });
+      this.dispatchEvent(whiteboardDrawEvent);
+    }
   }
 }

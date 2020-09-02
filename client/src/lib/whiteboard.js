@@ -1,6 +1,8 @@
 // https://medium.com/@joehanson/multi-user-javascript-virtual-whiteboard-28e4b24ef3e2
 // https://github.com/pubnub/codoodler/blob/master/js/app.js
 
+import { showElements, hideElements } from "./utils";
+
 const isTouchSupported = "ontouchstart" in window;
 const isPointerSupported = navigator.pointerEnabled;
 const downEvent = isTouchSupported
@@ -108,6 +110,7 @@ export class Whiteboard extends EventTarget {
     this.container.appendChild(this.wrapper);
     this.setRatios();
     this.drawOnCanvas = this.drawOnCanvas.bind(this);
+    showElements(this.container);
   }
 
   currentColour() {
@@ -177,9 +180,14 @@ export class Whiteboard extends EventTarget {
   }
 
   destroy() {
+    this.canvas.removeEventListener(downEvent, this.startDrawing);
+    this.canvas.removeEventListener(moveEvent, this.draw);
+    this.canvas.removeEventListener(upEvent, this.endDrawing);
     this.canvas.remove();
     this.wrapper.remove();
+    hideElements(this.container);
     this.lines = [];
+    return null;
   }
 
   setRatios() {
