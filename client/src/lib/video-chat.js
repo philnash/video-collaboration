@@ -103,6 +103,7 @@ export class VideoChat extends EventTarget {
         wrapper.appendChild(videoElement);
       } else if (track.kind === "audio") {
         const audioElement = track.attach();
+        audioElement.muted = true;
         wrapper.appendChild(audioElement);
         const mutedHTML = document.createElement("p");
         mutedHTML.appendChild(document.createTextNode("🔇"));
