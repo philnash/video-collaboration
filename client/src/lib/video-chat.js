@@ -136,6 +136,10 @@ export class VideoChat extends EventTarget {
         const mediaElements = track.detach();
         mediaElements.forEach((mediaElement) => mediaElement.remove());
       }
+      if (track.kind === "audio") {
+        track.removeAllListeners("enabled");
+        track.removeAllListeners("disabled");
+      }
     };
   }
 
@@ -189,12 +193,22 @@ export class VideoChat extends EventTarget {
       item.remove();
       this.participantItems.delete(sid);
     });
+    this.room.removeAllListeners();
+    this.room.localParticipant.off(
+      "trackPublished",
+      this.localParticipantTrackPublished
+    );
+    this.room.localParticipant.off(
+      "trackPublicationFailed",
+      this.localParticipantTrackPublicationFailed
+    );
+    this.audioTrack.removeAllListeners("enabled");
+    this.audioTrack.removeAllListeners("disabled");
     this.room = null;
   }
 
   disconnect() {
     this.room.disconnect();
-    this.room = null;
     window.removeEventListener("beforeunload", this.tidyUp);
     window.removeEventListener("pagehide", this.tidyUp);
   }
