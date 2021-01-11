@@ -33,14 +33,14 @@ npm start
 
 ## Features
 
-* Multi party video chat
 * Enable/disable video
 * Mute/unmute microphone
 * Dominant speaker detection
-* Screen share
-* Emoji/non-verbal reactions
-* Basic text chat
-* Interactive whiteboard
+* Multi party video chat
+* Screen share (check out the `screenshare` branch)
+* Emoji/non-verbal reactions (check out the `datatrack-reactions` branch)
+* Basic text chat  (check out the `chat` branch)
+* Interactive whiteboard ( (check out the `whiteboard` branch))
 
 ## License
 
