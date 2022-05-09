@@ -14,7 +14,7 @@ const createVolumeMeter = async (track) => {
   analyser.smoothingTimeConstant = 0.5;
 
   // Connect the LocalAudioTrack's media source to the analyser.
-  const stream = new MediaStream([track.mediaStreamTrack]);
+  const stream = new MediaStream([track]);
   const source = audioContext.createMediaStreamSource(stream);
   source.connect(analyser);
 
@@ -34,18 +34,22 @@ const createVolumeMeter = async (track) => {
 
 const getVolume = async (track, callback) => {
   const { shutdown, analyser, samples } = await createVolumeMeter(track);
-  requestAnimationFrame(function checkVolume() {
+  var animFrame = requestAnimationFrame(function checkVolume() {
     callback(analyser.frequencyBinCount, samples());
-    if (track.mediaStreamTrack.readyState === "live") {
-      requestAnimationFrame(checkVolume);
+    if (track.readyState === "live") {
+      animFrame = requestAnimationFrame(checkVolume);
     } else {
-      requestAnimationFrame(() => {
+      animFrame = requestAnimationFrame(() => {
         shutdown();
         callback(0);
       });
     }
   });
-  return shutdown;
+  const newShutdown = () => {
+    cancelAnimationFrame(animFrame);
+    shutdown();
+  };
+  return newShutdown;
 };
 
 const mapRange = (value, x1, y1, x2, y2) =>
@@ -55,28 +59,31 @@ const pollAudio = async (audioTrack, canvas) => {
   const context = canvas.getContext("2d");
   const width = canvas.width;
   const height = canvas.height;
-  return await getVolume(audioTrack, (bufferLength, samples) => {
-    context.fillStyle = "rgb(255, 255, 255)";
-    context.fillRect(0, 0, width, height);
+  return await getVolume(
+    audioTrack.mediaStreamTrack,
+    (bufferLength, samples) => {
+      context.fillStyle = "rgb(255, 255, 255)";
+      context.fillRect(0, 0, width, height);
 
-    var barWidth = (width / bufferLength) * 2.5;
-    var barHeight;
-    var x = 0;
+      var barWidth = (width / bufferLength) * 2.5;
+      var barHeight;
+      var x = 0;
 
-    for (var i = 0; i < bufferLength; i++) {
-      barHeight = mapRange(samples[i], 0, 255, 0, height * 2);
+      for (var i = 0; i < bufferLength; i++) {
+        barHeight = mapRange(samples[i], 0, 255, 0, height * 2);
 
-      context.fillStyle = "rgb(" + (barHeight + 100) + ",51,153)";
-      context.fillRect(
-        x,
-        (height - barHeight / 2) / 2,
-        barWidth,
-        barHeight / 4
-      );
-      context.fillRect(x, height / 2, barWidth, barHeight / 4);
-      x += barWidth + 1;
+        context.fillStyle = "rgb(" + (barHeight + 100) + ",51,153)";
+        context.fillRect(
+          x,
+          (height - barHeight / 2) / 2,
+          barWidth,
+          barHeight / 4
+        );
+        context.fillRect(x, height / 2, barWidth, barHeight / 4);
+        x += barWidth + 1;
+      }
     }
-  });
+  );
 };
 
-module.exports = { pollAudio };
+module.exports = { pollAudio, getVolume };

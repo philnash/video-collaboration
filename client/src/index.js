@@ -3,8 +3,15 @@ import { VideoChat } from "./lib/video-chat";
 import { hideElements, showElements } from "./lib/utils";
 import LocalPreview from "./lib/localPreview";
 import { ScreenSharer } from "./lib/screen-sharer";
+import { getVolume } from "./lib/volume-meter";
 
-let videoTrack, audioTrack, localPreview, videoChat, screenSharer;
+let videoTrack,
+  audioTrack,
+  localPreview,
+  videoChat,
+  screenSharer,
+  cloneAudioTrack,
+  stopVolumeChecker;
 
 const setupTrackListeners = (track, button, enableLabel, disableLabel) => {
   button.innerText = track.isEnabled ? disableLabel : enableLabel;
@@ -25,6 +32,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const screenShareBtn = document.getElementById("share-screen");
   const muteBtn = document.getElementById("mute-self");
   const disableVideoBtn = document.getElementById("disable-video");
+  const muteWarning = document.getElementById("warning");
 
   previewBtn.addEventListener("click", async () => {
     hideElements(startDiv);
@@ -104,6 +112,9 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!videoChat) {
       return;
     }
+    if (stopVolumeChecker) {
+      stopVolumeChecker();
+    }
     screenSharer = screenSharer.destroy();
     videoChat.disconnect();
     hideElements(videoChatDiv);
@@ -124,15 +135,38 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  muteBtn.addEventListener("click", () => {
+  muteBtn.addEventListener("click", async () => {
     if (audioTrack.isEnabled) {
+      cloneAudioTrack = audioTrack.mediaStreamTrack.clone();
       audioTrack.disable();
+      let isShowingMessage = false;
+      stopVolumeChecker = await getVolume(
+        cloneAudioTrack,
+        (bufferLength, samples) => {
+          if (
+            !isShowingMessage &&
+            samples.reduce((acc, sample) => acc + sample, 0) / bufferLength > 70
+          ) {
+            console.log("Are you talking? You seem to be on mute");
+            muteWarning.removeAttribute("hidden");
+            isShowingMessage = true;
+            setTimeout(() => {
+              isShowingMessage = false;
+              muteWarning.setAttribute("hidden", "hidden");
+            }, 3000);
+          }
+        }
+      );
       document.addEventListener("keydown", unMuteOnSpaceBarDown);
       document.addEventListener("keyup", muteOnSpaceBarUp);
     } else {
+      await stopVolumeChecker();
+      stopVolumeChecker = null;
+      cloneAudioTrack = null;
       audioTrack.enable();
       document.removeEventListener("keydown", unMuteOnSpaceBarDown);
       document.removeEventListener("keyup", muteOnSpaceBarUp);
+      muteWarning.setAttribute("hidden", "hidden");
     }
   });
 

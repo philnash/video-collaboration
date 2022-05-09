@@ -365,3 +365,17 @@ select {
   top: 6px;
   left: 6px;
 }
+
+#warning {
+  position: absolute;
+  top: 45%;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 2em;
+}
+#warning p {
+  background-color: transparent;
+}
